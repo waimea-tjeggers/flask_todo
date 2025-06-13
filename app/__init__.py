@@ -27,15 +27,18 @@ init_error(app)     # Handle errors and exceptions
 #-----------------------------------------------------------
 @app.get("/")
 def index():
+    with connect_db() as client:
+        sql = """
+              SELECT tasks.id
+                     tasks.name
+                     tasks.priority
+                     useers.name as owner
+              FROM things
+              JOIN users ON tasks.user_id = users.id
+
+              ORDER BY tasks.name ASC
+              """
     return render_template("pages/home.jinja")
-
-
-#-----------------------------------------------------------
-# About page route
-#-----------------------------------------------------------
-@app.get("/about/")
-def about():
-    return render_template("pages/about.jinja")
 
 
 #-----------------------------------------------------------
