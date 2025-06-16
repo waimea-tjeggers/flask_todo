@@ -32,12 +32,18 @@ def index():
               SELECT tasks.id
                      tasks.name
                      tasks.priority
-                     useers.name as owner
+                     users.name as owner
               FROM things
               JOIN users ON tasks.user_id = users.id
 
-              ORDER BY tasks.name ASC
+              ORDER BY tasks.priority 
+
+              WHERE task.id=?
               """
+        values = [id]
+        result = client.execute(sql, values)
+        tasks = result.rows
+
     return render_template("pages/home.jinja")
 
 
@@ -123,11 +129,11 @@ def show_one_thing(id):
 def add_a_thing():
     # Get the data from the form
     name  = request.form.get("name")
-    price = request.form.get("price")
+    priority = request.form.get("priority")
 
     # Sanitise the inputs
     name = html.escape(name)
-    price = html.escape(price)
+    priority = html.escape(priority)
 
     # Get the user id from the session
     user_id = session["user_id"]

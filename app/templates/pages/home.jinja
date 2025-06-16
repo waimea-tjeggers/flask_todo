@@ -1,7 +1,7 @@
 {#=====================================================
   Home page
   - Hero style greeting banner
-  - List of things passed in as 'things' array
+  - List of tasks passed in as 'tasks' array
   - Form for adding a new thing
 =====================================================#}
 
@@ -17,6 +17,61 @@
 
 {% block content %}
 
+    <h1>Tasks To Do</h1>
+
+
+    <article>
+
+        <ul>
+            {% for task in tasks %}
+              <P class="task">
+                <span class="priority">{{ task.priority }}</span>
+                <span class="name">{{ task.name }}</span>  
+              </P>
+            {% endfor %}
+
+            {% if task.complete %}
+            ☒
+            {% else %}
+            ☐
+            {% endif %}
+        </ul>
+
+    </article>
+
+
+    {# Only show form if user is logged in #}
+    {% if session.user_id %}
+
+        <article>
+
+            <h3>Add a New task...</h3>
+
+            <form action="/add" method="POST">
+
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Name of new thing"
+                    required
+                >
+
+                 <input
+                    type="number"
+                    name="priority"
+                    min="0"
+                    max="5"
+                    placeholder="Priority from 1 to 5"
+                    required
+                >
+
+                <button>Add the Task</button>
+
+            </form>
+
+        </article>
+
+    {% endif %}
 
 {% endblock %}
 
