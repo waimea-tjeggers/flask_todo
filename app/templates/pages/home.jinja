@@ -19,26 +19,33 @@
 
     <h1>Tasks To Do</h1>
 
+   {% if session.user_id %}
 
-    <article>
+        <article>
 
-        <ul>
             {% for task in tasks %}
-              <P class="task">
-                <span class="priority">{{ task.priority }}</span>
-                <span class="name">{{ task.name }}</span>  
-              </P>
+                <P class="task">
+                    <span class="priority">{{ task.priority }}</span>
+
+                    <span class="name">{{ task.name }}</span>  
+
+                    <span class="status">
+                        {% if task.completed %}
+                            <a href="/incomplete/{{ task.id }}">☒</a>
+                        {% else %}
+                            ☐
+                        {% endif %}                    
+                    </span>
+                </P>
             {% endfor %}
 
-            {% if task.complete %}
-            ☒
-            {% else %}
-            ☐
-            {% endif %}
-        </ul>
+        </article>
 
-    </article>
+    {% else %}
 
+        <p>Please login to display current tasks or complete them</p>
+
+    {% endif %}
 
     {# Only show form if user is logged in #}
     {% if session.user_id %}
@@ -52,7 +59,7 @@
                 <input
                     type="text"
                     name="name"
-                    placeholder="Name of new thing"
+                    placeholder="Name of new task"
                     required
                 >
 
@@ -65,7 +72,7 @@
                     required
                 >
 
-                <button>Add the Task</button>
+                <button>Add New Task</button>
 
             </form>
 

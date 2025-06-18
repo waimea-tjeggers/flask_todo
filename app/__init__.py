@@ -27,24 +27,23 @@ init_error(app)     # Handle errors and exceptions
 #-----------------------------------------------------------
 @app.get("/")
 def index():
+
     with connect_db() as client:
         sql = """
-              SELECT tasks.id
-                     tasks.name
-                     tasks.priority
-                     users.name as owner
-              FROM things
-              JOIN users ON tasks.user_id = users.id
+              SELECT id,
+                     name,
+                     priority,
+                     completed
 
-              ORDER BY tasks.priority 
-
-              WHERE task.id=?
+              FROM tasks
+            
+              ORDER BY priority DESC
               """
-        values = [id]
+        values = []
         result = client.execute(sql, values)
         tasks = result.rows
 
-    return render_template("pages/home.jinja")
+    return render_template("pages/home.jinja", tasks=tasks)
 
 
 #-----------------------------------------------------------
@@ -63,65 +62,9 @@ def login_form():
     return render_template("pages/login.jinja")
 
 
-#-----------------------------------------------------------
-# Things page route - Show all the things, and new thing form
-#-----------------------------------------------------------
-@app.get("/things/")
-def show_all_things():
-    with connect_db() as client:
-        # Get all the things from the DB
-        sql = """
-            SELECT things.id,
-                   things.name,
-                   users.name AS owner
-
-            FROM things
-            JOIN users ON things.user_id = users.id
-
-            ORDER BY things.name ASC
-        """
-        result = client.execute(sql)
-        things = result.rows
-
-        # And show them on the page
-        return render_template("pages/things.jinja", things=things)
-
 
 #-----------------------------------------------------------
-# Thing page route - Show details of a single thing
-#-----------------------------------------------------------
-@app.get("/thing/<int:id>")
-def show_one_thing(id):
-    with connect_db() as client:
-        # Get the thing details from the DB, including the owner info
-        sql = """
-            SELECT things.id,
-                   things.name,
-                   things.price,
-                   things.user_id,
-                   users.name AS owner
-
-            FROM things
-            JOIN users ON things.user_id = users.id
-
-            WHERE things.id=?
-        """
-        values = [id]
-        result = client.execute(sql, values)
-
-        # Did we get a result?
-        if result.rows:
-            # yes, so show it on the page
-            thing = result.rows[0]
-            return render_template("pages/thing.jinja", thing=thing)
-
-        else:
-            # No, so show error
-            return not_found_error()
-
-
-#-----------------------------------------------------------
-# Route for adding a thing, using data posted from a form
+# Route for adding a task, using data posted from a form
 # - Restricted to logged in users
 #-----------------------------------------------------------
 @app.post("/add")
@@ -133,41 +76,81 @@ def add_a_thing():
 
     # Sanitise the inputs
     name = html.escape(name)
-    priority = html.escape(priority)
 
     # Get the user id from the session
     user_id = session["user_id"]
 
     with connect_db() as client:
         # Add the thing to the DB
-        sql = "INSERT INTO things (name, price, user_id) VALUES (?, ?, ?)"
-        values = [name, price, user_id]
+        sql = "INSERT INTO tasks (name, priority, user_id) VALUES (?, ?, ?)"
+        values = [name, priority, user_id]
         client.execute(sql, values)
 
         # Go back to the home page
-        flash(f"Thing '{name}' added", "success")
-        return redirect("/things")
+        flash(f"task '{name}' added", "success")
+        return redirect("/")
+
 
 
 #-----------------------------------------------------------
-# Route for deleting a thing, Id given in the route
+# Route for deleting a task, Id given in the route
+# - Restricted to logged in users
+#-----------------------------------------------------------
+@app.get("/complete/<int:id>")
+@login_required
+def complete_a_task(id):
+    # Get the user id from the session
+    user_id = session["user_id"]
+
+    with connect_db() as client:
+        # update the status of the task from the DB only if we own it
+        sql = "UPDATE tasks SET tasks.completed = 1 WHERE id=? AND user_id=?"
+        values = [id, user_id]
+        client.execute(sql, values)
+
+        # Go back to the home page
+        return redirect("/")
+
+
+#-----------------------------------------------------------
+# Route for deleting a task, Id given in the route
+# - Restricted to logged in users
+#-----------------------------------------------------------
+@app.get("/incomplete/<int:id>")
+@login_required
+def incomplete_a_task(id):
+    # Get the user id from the session
+    user_id = session["user_id"]
+
+    with connect_db() as client:
+        # update the status of the task from the DB only if we own it
+        sql = "UPDATE tasks SET tasks.completed = 0 WHERE id=? AND user_id=?"
+        values = [id, user_id]
+        client.execute(sql, values)
+
+        # Go back to the home page
+        return redirect("/")
+
+
+#-----------------------------------------------------------
+# Route for deleting a task, Id given in the route
 # - Restricted to logged in users
 #-----------------------------------------------------------
 @app.get("/delete/<int:id>")
 @login_required
-def delete_a_thing(id):
+def delete_a_task(id):
     # Get the user id from the session
     user_id = session["user_id"]
 
     with connect_db() as client:
         # Delete the thing from the DB only if we own it
-        sql = "DELETE FROM things WHERE id=? AND user_id=?"
+        sql = "DELETE FROM tasks WHERE id=? AND user_id=?"
         values = [id, user_id]
         client.execute(sql, values)
 
         # Go back to the home page
-        flash("Thing deleted", "success")
-        return redirect("/things")
+        flash("task deleted", "success")
+        return redirect("/")
 
 
 #-----------------------------------------------------------
